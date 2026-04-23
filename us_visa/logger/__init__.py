@@ -13,6 +13,7 @@ log_dir.mkdir(exist_ok=True)
 
 log_file = log_dir / f"{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.log"
 
+# root logger config
 logging.basicConfig(
     format="[ %(asctime)s ] %(name)s - %(levelname)s - %(message)s",
     level=logging.DEBUG,
@@ -21,3 +22,9 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout)
     ]
 )
+
+# pymongo log config
+logging.getLogger("pymongo").setLevel(logging.ERROR)
+logging.getLogger("pymongo.topology").setLevel(logging.ERROR)
+logging.getLogger("pymongo.connection").setLevel(logging.ERROR)
+logging.getLogger("pymongo.command").setLevel(logging.ERROR)

@@ -22,4 +22,5 @@ fastapi
 uvicorn
 jinja2
 python-multipart
+python-box==6.0.2
 -e .

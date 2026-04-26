@@ -12,32 +12,29 @@ columns:
   full_time_position: category
   case_status: category
 
-numerical_columns:
-  - no_of_employees
-  - prevailing_wage
-  - yr_of_estab
-
-categorical_columns:
-  - case_id
-  - continent
-  - education_of_employee
-  - has_job_experience
-  - requires_job_training
-  - region_of_employment
-  - unit_of_wage
-  - full_time_position
-  - case_status
+target_column: case_status
 
 drop_columns:
   - case_id
-  - yr_of_estab
 
+# Features after Feature_Engineering
+engineered_features:
+  - company_age
 
-# for data transformation
+# final num cols after transformation
 num_features:
   - no_of_employees
   - prevailing_wage
   - company_age
+
+# categorical_columns:
+#   - continent
+#   - education_of_employee
+#   - has_job_experience
+#   - requires_job_training
+#   - region_of_employment
+#   - unit_of_wage
+#   - full_time_position
 
 or_columns:
   - has_job_experience
@@ -49,7 +46,6 @@ oh_columns:
   - continent
   - unit_of_wage
   - region_of_employment
-
-transform_columns:
+power_columns:
   - no_of_employees
   - company_age

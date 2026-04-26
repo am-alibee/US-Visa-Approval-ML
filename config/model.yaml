@@ -1,0 +1,60 @@
+tuning:
+  n_trials: 30
+  direction: maximize
+
+
+models:
+  RandomForestClassifier:
+    module: sklearn.ensemble
+    class: RandomForestClassifier
+    params:
+      random_state: 100
+    search_space:
+      n_estimators:
+        type: int
+        low: 100
+        high: 500
+      max_depth:
+        type: int
+        low: 10
+        high: 30
+      min_samples_split:
+        type: int
+        low: 2
+        high: 10
+      min_samples_leaf:
+        type: int
+        low: 1
+        high: 4
+      max_features:
+        type: categorical
+        choices: ["sqrt", "log2"]
+  
+
+  LogisticRegression:
+    module: sklearn.linear_model
+    class: LogisticRegression
+    params:
+      max_iter: 1000
+    search_space:
+      C:
+        type: float
+        low: 0.01
+        high: 10
+        log: true
+      solver:
+        type: categorical
+        choices: ["lbfgs", "liblinear"]
+
+  KNeighborsClassifier:
+    module: sklearn.neighbors
+    class: KNeighborsClassifier
+    params: {}
+    search_space:
+      n_neighbors:
+        type: int
+        low: 3
+        high: 15
+      weights:
+        type: categorical
+        choices: ["uniform", "distance"]

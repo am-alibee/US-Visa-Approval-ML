@@ -4,14 +4,24 @@ from us_visa.logger import logging
 
 from us_visa.components.data_ingestion import DataIngestion
 from us_visa.components.data_validation import DataValidationPipeline
+from us_visa.components.data_transformation import DataTransformation
 
-from us_visa.entity.config_entity import (DataIngestionConfig, DataValidationConfig)
-from us_visa.entity.artifact_entity import (DataIngestionArtifact, DataValidationArtifact)
+from us_visa.entity.config_entity import (
+    DataIngestionConfig, 
+    DataValidationConfig,
+    DataTransformationConfig
+)
+from us_visa.entity.artifact_entity import (
+    DataIngestionArtifact, 
+    DataValidationArtifact,
+    DataTransformationArtifact
+)
 
 class TrainingPipeline:
     def __init__(self):
         self.data_ingestion_config = DataIngestionConfig()
         self.data_validation_config = DataValidationConfig()
+        self.data_transformation_config = DataTransformationConfig()
 
     # def start_data_ingestion(self) -> DataIngestionArtifact:
 
@@ -71,5 +81,18 @@ class TrainingPipeline:
                 return
             
             logging.info("Data Validation passed")
+
+            # data transformation
+            transformation = DataTransformation(
+                ingestion_artifact=ingestion_artifact,
+                validation_artifact=validation_artifact,
+                config=self.data_transformation_config
+            )
+
+            transformation_artifact = transformation.initiate_data_transformation()
+
+            logging.info("Data transformation completed")
+
+
         except Exception as e:
             raise UsVisaException(e, sys)

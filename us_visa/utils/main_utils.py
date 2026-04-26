@@ -6,6 +6,9 @@ from pandas import DataFrame
 import dill
 import yaml
 
+from box import ConfigBox
+from box.exceptions import BoxValueError
+
 from us_visa.exception import UsVisaException
 from us_visa.logger import logging
 
@@ -19,11 +22,13 @@ def create_directories(directory_path: list) -> None:
         raise UsVisaException(e, sys) from e
 
 
-def read_yaml(filepath: str) -> dict:
+def read_yaml(filepath: str) -> ConfigBox:
     try:
         with open(filepath, 'r') as yaml_file:
-            return yaml.safe_load(yaml_file)
+            return ConfigBox(yaml.safe_load(yaml_file))
         
+    except BoxValueError:
+        raise ValueError("yaml file is empty")
     except Exception as e:
         raise UsVisaException(e, sys) from e
     
@@ -75,7 +80,7 @@ def save_numpy_array_data(file_path: str, array: np.array):
     """
     try:
         dir_path = os.path.dirname(file_path)
-        create_directories([file_path])
+        create_directories([dir_path])
         with open(file_path, "wb") as file_obj:
             np.save(file_obj, array)
     except Exception as e:

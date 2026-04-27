@@ -1,6 +1,7 @@
 tuning:
   n_trials: 30
   direction: maximize
+  cv: 3
 
 
 models:

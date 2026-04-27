@@ -68,3 +68,10 @@ class ModelTrainerConfig:
     trained_model_file_path: str = os.path.join(model_trainer_dir, MODEL_TRAINER_TRAINED_MODEL_DIR, MODEL_FILE_NAME)
     expected_accuracy_score: float = MODEL_TRAINER_EXPECTED_SCORE
     model_config_file_path: str = MODEL_TRAINER_MODEL_CONFIG_FILE_PATH
+
+@dataclass
+class MlflowConfig:
+    tracking_url: str = "https://dagshub.com/am-alibee/US-Visa-Approval-ML.mlflow"
+    experiment_name: str = "us_visa_optuna"
+    repo_owner: str = "am-alibee"
+    repo_name: str = "US-Visa-Approval-ML"

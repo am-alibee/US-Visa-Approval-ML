@@ -46,6 +46,9 @@ class ModelTrainer:
         self.config = config
         self.schema = read_yaml(config.model_config_file_path)
 
+        self.seed = config.random_state
+        np.random.seed(self.seed)
+
         setup_mlflow(mlflow_config)
 
     # sample hyperparams
@@ -76,6 +79,14 @@ class ModelTrainer:
                 )
 
         return params
+    
+    def _inject_random_state(self, model_class, params: dict):
+        try:
+            if "random_state" in model_class().get_params():
+                params["random_state"] = self.seed
+        except Exception:
+            pass
+        return params
 
     def _optimize_model(self, model_name, model_cfg, x_train, y_train):
         def objective(trial):
@@ -86,6 +97,8 @@ class ModelTrainer:
                     module_name=model_cfg["module"], 
                     class_name=model_cfg["class"]
                 )
+
+                params = self._inject_random_state(model_class=model_class, params=params)
 
                 model = model_class(
                     **model_cfg.get("params", {}),
@@ -98,7 +111,7 @@ class ModelTrainer:
                     x_train,
                     y_train,
                     cv=self.schema["tuning"]["cv"],
-                    scoring="f1",
+                    scoring="f1_weighted",
                     n_jobs=-1
                 )
 
@@ -106,18 +119,22 @@ class ModelTrainer:
 
                 # log each trial
                 with mlflow.start_run(nested=True):
-                    mlflow.log_param("model", model_name)
+                    mlflow.set_tag("model", model_name)
+                    mlflow.set_tag("trial_number", trial.number)
                     mlflow.log_params(params)
                     mlflow.log_metric("cv_f1", f1)
 
                 return f1
             
             except Exception as e:
-                raise UsVisaException(e, sys)
+                logging.error(f"{model_name} trial failed: {e}")
+                return -0 # penalize instead of crashing
+                # raise UsVisaException(e, sys)
             
         study = optuna.create_study(
             direction=self.schema["tuning"]["direction"],
-            pruner=MedianPruner()
+            pruner=MedianPruner(),
+            sampler=optuna.samplers.TPESampler(seed=self.seed)
         )
 
         study.optimize(
@@ -149,7 +166,7 @@ class ModelTrainer:
     # main pipeline
     def initiate_model_trainer(self) -> ModelTrainerArtifact:
         try:
-            with mlflow.start_run(run_name="optuna training"):
+            with mlflow.start_run(run_name="model_training"):
 
                 logging.info("Loading transformed data")
 
@@ -173,28 +190,33 @@ class ModelTrainer:
                 for model_name, model_cfg in self.schema["models"].items():
                     logging.info(f"Optimizing {model_name}")
 
-                    model, params, score = self._optimize_model(
-                        model_name,
-                        model_cfg,
-                        x_train,
-                        y_train
-                    )
+                    try:
+                        model, params, score = self._optimize_model(
+                            model_name,
+                            model_cfg,
+                            x_train,
+                            y_train
+                        )
 
-                    mlflow.log_metric(f"{model_name}_best_cv_f1", score)
+                        mlflow.log_metric(f"{model_name}_best_cv_f1", score)
 
-                    if score > best_global_score:
-                        best_global_score = score
-                        best_global_model = model
-                        best_global_params = params
-                        best_model_name = model_name
+                        if score > best_global_score:
+                            best_global_score = score
+                            best_global_model = model
+                            best_global_params = params
+                            best_model_name = model_name
+                    
+                    except Exception as e:
+                        logging.error(f"{model_name} failed entirely: {e}")
+                        continue
 
                 if best_global_model is None:
                     raise Exception("No valid model found")
                 
                 # enforce minimum performance
-                if best_global_score < self.config.expected_accuracy_score:
+                if best_global_score < self.config.expected_f1_score:
                     raise Exception(
-                        f"No model met expected accuracy. Best cv f1: {best_global_score}"
+                        f"No model met expected F1. Best: {best_global_score}"
                     )
                 
                 logging.info(f"Best model selected: {best_model_name}")
@@ -238,7 +260,9 @@ class ModelTrainer:
 
                 return ModelTrainerArtifact(
                     trained_model_file_path=self.config.trained_model_file_path,
-                    metric_artifact=metric_artifact
+                    metric_artifact=metric_artifact,
+                    best_model_name=best_model_name,
+                    best_params=best_global_params
                 )
         
         except Exception as e:

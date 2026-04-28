@@ -29,3 +29,5 @@ class ClassificationMetricArtifact:
 class ModelTrainerArtifact:
     trained_model_file_path: str
     metric_artifact: ClassificationMetricArtifact
+    best_model_name: str
+    best_params: Dict[str, Any]

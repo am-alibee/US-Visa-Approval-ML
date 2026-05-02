@@ -6,19 +6,17 @@ from us_visa.components.data_ingestion import DataIngestion
 from us_visa.components.data_validation import DataValidationPipeline
 from us_visa.components.data_transformation import DataTransformation
 from us_visa.components.model_trainer import ModelTrainer
+from us_visa.components.model_evaluation import ModelEvaluation
+from us_visa.components.model_pusher import ModelPusher
 
 from us_visa.entity.config_entity import (
     DataIngestionConfig, 
     DataValidationConfig,
     DataTransformationConfig,
     ModelTrainerConfig,
-    MlflowConfig
-)
-from us_visa.entity.artifact_entity import (
-    DataIngestionArtifact, 
-    DataValidationArtifact,
-    DataTransformationArtifact,
-    ModelTrainerArtifact
+    MlflowConfig,
+    ModelEvaluationConfig,
+    ModelPusherConfig
 )
 
 class TrainingPipeline:
@@ -28,37 +26,8 @@ class TrainingPipeline:
         self.data_transformation_config = DataTransformationConfig()
         self.model_trainer_config = ModelTrainerConfig()
         self.mlflow_config = MlflowConfig()
-
-    # def start_data_ingestion(self) -> DataIngestionArtifact:
-
-    #     try:
-    #         logging.info("Entered the start_data_ingestion method of TrainingPipeline")
-    #         logging.info("Getting the data from MongoDB")
-    #         data_ingestion = DataIngestion(data_ingestion_config=self.data_ingestion_config)
-    #         data_ingestion_artifacts = data_ingestion.initiate_data_ingestion()
-    #         logging.info("Got the training & test sets from MongoDB")
-    #         logging.info("Exited the start_data_ingestion method the TrainingPipeline class")
-
-    #         return data_ingestion_artifacts
-    #     except Exception as e:
-    #         raise UsVisaException(e, sys)
-        
-    # def start_data_validation(self, data_ingestion_artifact: DataIngestionArtifact) -> DataValidationArtifact:
-    #     """
-    #     This method of the train pipeline is responsible for starting the datavalidation component
-    #     """
-    #     logging.info("Entered the start_data_validation component of training pipeline")
-    #     try:
-    #         data_validation = DataValidationPipeline()
-        
-        
-    # def run_pipeline(self) -> None:
-
-    #     try:
-    #         data_ingestion_artifact = self.start_data_ingestion()
-
-    #     except Exception as e:
-    #         raise UsVisaException(e, sys)
+        self.model_evaluation_config = ModelEvaluationConfig()
+        self.model_pusher_config = ModelPusherConfig()
 
     def run_pipeline(self) -> None:
         try:
@@ -112,6 +81,29 @@ class TrainingPipeline:
             logging.info(f"Model path: {model_trainer_artifact.metric_artifact}")
             logging.info(f"Metrics: {model_trainer_artifact.metric_artifact}")
 
+            # model evaluation
+            evaluator = ModelEvaluation(
+                config=self.model_evaluation_config,
+                transformation_artifact=transformation_artifact,
+                trainer_artifact=model_trainer_artifact
+            )
+
+            model_evaluation_artifact = evaluator.initiate_model_evaluation()
+            logging.info(f"Model accepted: {model_evaluation_artifact.is_model_accepted}")
+
+            # model pusher
+            if not model_evaluation_artifact.is_model_accepted:
+                logging.info("New model rejected. Skipping deployment.")
+                return
+            
+            pusher = ModelPusher(
+                config=self.model_pusher_config,
+                evaluation_artifact=model_evaluation_artifact
+            )
+
+            model_pusher_artifact = pusher.initiate_model_pusher()
+
+            logging.info(f"Model pusher to s3: {model_evaluation_artifact.s3_model_path}")
 
         except Exception as e:
             raise UsVisaException(e, sys)

@@ -28,3 +28,5 @@ logging.getLogger("pymongo").setLevel(logging.ERROR)
 logging.getLogger("pymongo.topology").setLevel(logging.ERROR)
 logging.getLogger("pymongo.connection").setLevel(logging.ERROR)
 logging.getLogger("pymongo.command").setLevel(logging.ERROR)
+
+logging.getLogger("python_multipart").setLevel(logging.WARNING)

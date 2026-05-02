@@ -9,6 +9,7 @@ MONGODB_URL_KEY = "MONGODB_URL"
 
 PIPELINE_NAME: str = "usvisa"
 ARTIFACT_DIR: str = "artifact"
+# LATEST_ARTIFACT_DIR = sorted(os.listdir(ARTIFACT_DIR))[-1]
 
 
 TRAIN_FILE_NAME: str = "train.csv"
@@ -61,3 +62,25 @@ MODEL_TRAINER_TRAINED_MODEL_NAME: str = "model.pkl"
 MODEL_TRAINER_EXPECTED_F1_SCORE: float = 0.6
 MODEL_TRAINER_MODEL_CONFIG_FILE_PATH: str = os.path.join("config", "model.yaml")
 MODEL_TRAINER_RANDOM_STATE: int = 100
+
+
+"""
+Model Evaluation Related Constants
+"""
+
+
+
+MODEL_EVALUATION_CHANGED_THRESHOLD_SCORE: float = 0.02
+MODEL_BUCKET_NAME: str = "usvisa-model-s3-bucket"
+MODEL_PUSHER_S3_KEY: str = "model-registry"
+
+AWS_ACCESS_KEY_ENV_KEY: str = "AWS_ACCESS_KEY_ID"
+AWS_SECRET_ACCESS_KEY_ENV_KEY: str = "AWS_SECRET_ACCESS_KEY"
+REGION_NAME: str = "us-east-1"
+
+"""
+App related constants
+"""
+
+APP_HOST = "0.0.0.0"
+APP_PORT = 8080

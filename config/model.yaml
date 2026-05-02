@@ -1,5 +1,5 @@
 tuning:
-  n_trials: 30
+  n_trials: 3
   direction: maximize
   cv: 3
 

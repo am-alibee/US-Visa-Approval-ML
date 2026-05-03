@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY . .
 
+RUN echo "------- This is the new docker file -----------"
+
 RUN ls -la
 
 RUN pip install --no-cache-dir -r requirements.txt

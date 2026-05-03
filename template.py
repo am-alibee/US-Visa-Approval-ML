@@ -47,7 +47,6 @@ list_of_files = [
     "config/schema.yaml",
 ]
 
-
 for filepath in list_of_files:
     filepath = Path(filepath)
     filedir, filename = os.path.split(filepath)
@@ -57,4 +56,4 @@ for filepath in list_of_files:
         with open(filepath, 'w') as f:
             pass
     else:
-        print(f"File is already present at {filepath}")
+        print(f"File is already present at location {filepath}")

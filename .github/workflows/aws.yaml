@@ -20,7 +20,6 @@ jobs:
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
 
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push Docker image to ECR
@@ -40,16 +39,16 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Stop existing container (safe cleanup)
+      - name: Stop existing container
         run: |
           docker rm -f usvisa || true
 
-      - name: Deploy latest Docker image
+      - name: Deploy container from ECR
         run: |
-          IMAGE="${{ needs.Continuous-Integration.outputs.registry }}/${{ secrets.ECR_REPO }}:latest"
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          REGION="${{ secrets.AWS_DEFAULT_REGION }}"
 
-          # fallback (more reliable than outputs)
-          IMAGE="${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest"
+          IMAGE="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/${{ secrets.ECR_REPO }}:latest"
 
           echo "Deploying image: $IMAGE"
 

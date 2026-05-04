@@ -85,7 +85,8 @@ class TrainingPipeline:
             evaluator = ModelEvaluation(
                 config=self.model_evaluation_config,
                 transformation_artifact=transformation_artifact,
-                trainer_artifact=model_trainer_artifact
+                trainer_artifact=model_trainer_artifact,
+                ingestion_artifact=ingestion_artifact
             )
 
             model_evaluation_artifact = evaluator.initiate_model_evaluation()

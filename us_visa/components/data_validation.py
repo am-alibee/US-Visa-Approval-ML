@@ -41,6 +41,8 @@ class DataValidationSchemaValidator:
         try:
             self.schema = read_yaml(SCHEMA_FILE_PATH)
             self.expected_cols = set(self.schema['columns'].keys())
+            self.final_features = set(self.schema["final_features"])
+
         except Exception as e:
             raise UsVisaException(e, sys)
 
@@ -52,6 +54,9 @@ class DataValidationSchemaValidator:
 
         missing_cols = list(self.expected_cols - actual_cols)
         extra_cols = list(actual_cols - self.expected_cols)
+
+        # ensure all cols exist after preprocessing
+        # feature_mismatch = list(self.final_features - actual_cols)
 
         type_mismatches = {}
 

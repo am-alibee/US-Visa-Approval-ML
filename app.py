@@ -78,6 +78,9 @@ async def train():
     except Exception as e:
         return Response(f"Training failed: {e}")
     
+
+classifier = USvisaClassifier()
+
 @app.post("/")
 async def predict(request: Request):
     try:
@@ -87,10 +90,10 @@ async def predict(request: Request):
         usvisa_data = USvisaData(**data)
         df = usvisa_data.get_usvisa_input_data_frame()
 
-        classifier = USvisaClassifier()
+        # classifier = USvisaClassifier()
         prediction = classifier.predict(df)[0]
 
-        status = "Visa-approved" if prediction == 1 else "Visa Not-Approved"
+        status = "Visa-approved" if prediction == 0 else "Visa Not-Approved"
 
         return templates.TemplateResponse(
             "usvisa.html",

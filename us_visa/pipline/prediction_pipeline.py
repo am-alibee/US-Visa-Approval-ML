@@ -5,7 +5,8 @@ from pandas import DataFrame
 from us_visa.entity.config_entity import USvisaPredictorConfig
 from us_visa.exception import UsVisaException
 from us_visa.logger import logging
-from us_visa.utils.main_utils import load_object
+
+from us_visa.entity.s3_estimator import USVisaEstimator
 
 class USvisaData:
     def __init__(
@@ -59,20 +60,26 @@ class USvisaClassifier:
     def __init__(self, config: USvisaPredictorConfig = USvisaPredictorConfig()):
         try:
             self.config = config
+            self.estimator = USVisaEstimator(
+                bucket_name=config.model_bucket_name,
+                model_path=config.model_file_path
+            )
             logging.info("Loading deployed model and preprocessor")
-
-            self.model = load_object(self.config.model_file_path)
-            self.preprocessor = load_object(self.config.preprocessor_file_path)
 
         except Exception as e:
             raise UsVisaException(e, sys)
         
     def predict(self, dataframe: DataFrame):
         try:
-            logging.info("Running prediction pipeline")
+            logging.info("Starting prediction using S3")
 
-            transformed_data = self.preprocessor.transform(dataframe)
-            prediction = self.model.predict(transformed_data)
+            # run prediction
+            if not self.estimator.is_model_present():
+                raise ValueError("No model found in S3. Train and deploy first")
+
+            prediction = self.estimator.predict(dataframe)
+
+            logging.info("Prediction completed successfully")
 
             return prediction
         

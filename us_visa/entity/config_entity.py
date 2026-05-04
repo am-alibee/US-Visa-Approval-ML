@@ -90,18 +90,5 @@ class ModelPusherConfig:
 
 @dataclass
 class USvisaPredictorConfig:
-    model_file_path: str = os.path.join(
-        ARTIFACT_DIR,
-        sorted(os.listdir(ARTIFACT_DIR))[-1],
-        MODEL_TRAINER_DIR_NAME,
-        MODEL_TRAINER_TRAINED_MODEL_DIR,
-        MODEL_FILE_NAME
-    )
-    preprocessor_file_path: str = os.path.join(
-        ARTIFACT_DIR,
-        sorted(os.listdir(ARTIFACT_DIR))[-1],
-        DATA_TRANSFORMATION_DIR_NAME,
-        DATA_TRANSFORMATION_TRANSFORMED_OBJECT_DIR,
-        PREPROCESSING_OBJ_FILE_NAME
-    )
+    model_file_path: str = MODEL_FILE_NAME
     model_bucket_name: str = MODEL_BUCKET_NAME

@@ -20,6 +20,8 @@ class USVisaEstimator:
     
     def load_model(self) -> USVisaModel:
         if self._model is None:
+            if not self.is_model_present():
+                raise ValueError("Model not found in S3")
             self._model = self.storage.load_model(self.bucket, self.key)
         return self._model
     
@@ -28,6 +30,10 @@ class USVisaEstimator:
 
     def predict(self, df: DataFrame):
         try:
+            # convert to DataFrame, if input is not a df
+            if not isinstance(df, DataFrame):
+                df = DataFrame(df)
+
             model = self.load_model()
             return model.predict(df)
         except Exception as e:

@@ -8,11 +8,11 @@ from typing import Tuple
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, OrdinalEncoder, PowerTransformer
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, PowerTransformer
 
 from imblearn.combine import SMOTEENN
 
-from us_visa.constants import TARGET_COLUMN, SCHEMA_FILE_PATH, CURRENT_YEAR, DATA_TRANSFORMATION_META_DATA_PATH
+from us_visa.constants import TARGET_COLUMN, SCHEMA_FILE_PATH, CURRENT_YEAR
 from us_visa.entity.config_entity import DataTransformationConfig
 from us_visa.entity.artifact_entity import DataTransformationArtifact, DataIngestionArtifact, DataValidationArtifact
 from us_visa.entity.estimator import TargetValueMapping
@@ -61,13 +61,21 @@ class DataTransformation:
             self.config = config
             self.validation_artifact = validation_artifact
             self.schema = read_yaml(SCHEMA_FILE_PATH)
+            
+            self.final_features = self.schema["final_features"]
         except Exception as e:
             raise UsVisaException(e, sys)
         
     # read_data
     @staticmethod
     def read_data(path: str) -> pd.DataFrame:
-        return pd.read_csv(path)
+        # return pd.read_csv(path)
+
+        df = pd.read_csv(path)
+        cols = df.columns
+        logging.info(f"the DataFrame has cols: {cols}")
+
+        return df
     
     # Build pipeline
     def _build_pipeline(self) -> Pipeline:
@@ -75,15 +83,15 @@ class DataTransformation:
             oh_cols = self.schema.oh_columns
             or_cols = self.schema.or_columns
             power_cols = self.schema.power_columns
-            # scale_cols = self.schema.scale_columns
 
             preprocessor = ColumnTransformer(
                 transformers=[
-                    ("onehot", OneHotEncoder(handle_unknown="ignore"), oh_cols),
+                    ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False), oh_cols),
                     ("ordinal", OrdinalEncoder(), or_cols),
-                    ("power", PowerTransformer(method="yeo-johnson"), power_cols) #,
-                    # ("scaler", StandardScaler(), scale_cols)
-                ]
+                    ("power", PowerTransformer(method="yeo-johnson"), power_cols) 
+                ],
+                remainder="drop",
+                verbose_feature_names_out=False
             )
 
             pipeline = Pipeline(steps=[
@@ -97,10 +105,12 @@ class DataTransformation:
             raise UsVisaException(e, sys)
     
     # --------- save metadata ---------
-    def _save_metadata(self, y_before, y_after):
+    def _save_metadata(self, x_train_final, y_before, y_after):
         try:
             metadata = {
                 "timestamp": str(datetime.now()),
+                "feature_count": int(x_train_final.shape[1]),
+                "expected_features": self.final_features,
                 "train_class_distribution_before": y_before.value_counts().to_dict(),
                 "train_class_distribution_after": y_after.value_counts().to_dict()
             }
@@ -143,14 +153,31 @@ class DataTransformation:
             pipeline = self._build_pipeline()
 
             # Transform 
-            x_train_transformed = pipeline.fit_transform(x_train)
-            x_test_transformed = pipeline.transform(x_test)
+            x_train = pipeline.fit_transform(x_train)
+            x_test = pipeline.transform(x_test)
+
+            # force float
+            x_train = np.asarray(x_train, dtype=np.float32)
+            x_test = np.asarray(x_test, dtype=np.float32)
+
+            logging.info(f"Transformed feature shape: {x_train.shape}")
+
+            # feature count lock
+            # feature_count = x_train_final.shape[1]
 
             # Apply SMOTE on training
             smote = SMOTEENN()
-            x_train_final, y_train_final = smote.fit_resample(x_train_transformed, y_train)
+            x_train_final, y_train_final = smote.fit_resample(x_train, y_train.astype(int))
             
-            x_test_final, y_test_final = x_test_transformed, y_test
+            x_test_final, y_test_final = x_test, y_test.astype(int)
+
+            #  consistency check after smote
+            if x_train_final.shape[1] != x_test_final.shape[1]:
+                raise ValueError("Train/Test feature mismatch after smote")
+
+
+            # save the metadata
+            self._save_metadata(x_train_final, y_before=y_train, y_after=y_train_final)
 
             # Combine arrays
             train_arr = np.c_[x_train_final, y_train_final]
@@ -160,9 +187,6 @@ class DataTransformation:
             save_object(self.config.transformed_object_file_path, pipeline)
             save_numpy_array_data(self.config.transformed_train_file_path, train_arr)
             save_numpy_array_data(self.config.transformed_test_file_path, test_arr)
-
-            # Save metadata
-            self._save_metadata(y_train, pd.Series(y_train_final))
 
             logging.info("Data Transformation Completed Successfully")
 

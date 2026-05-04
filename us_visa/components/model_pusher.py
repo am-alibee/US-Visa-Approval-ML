@@ -24,7 +24,7 @@ class ModelPusher:
     def initiate_model_pusher(self) -> ModelPusherArtifact:
         try:
             if not self.evaluation_artifact.is_model_accepted:
-                logging.info("Model not accepted. Skipping push.")
+                logging.info(f"Model rejected. Improvement={self.evaluation_artifact.changed_accuracy}")
                 return ModelPusherArtifact(
                     bucket_name=self.config.bucket_name,
                     s3_model_path=None

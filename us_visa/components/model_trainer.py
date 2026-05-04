@@ -27,6 +27,8 @@ from us_visa.entity.artifact_entity import (
     ClassificationMetricArtifact
 )
 
+from us_visa.entity.estimator import USVisaModel
+
 from us_visa.utils.mlflow_utils import setup_mlflow
 
 
@@ -109,7 +111,7 @@ class ModelTrainer:
                 scores = cross_val_score(
                     model,
                     x_train,
-                    y_train,
+                    y_train.astype(int),
                     cv=self.schema["tuning"]["cv"],
                     scoring="f1_weighted",
                     n_jobs=-1
@@ -128,7 +130,7 @@ class ModelTrainer:
             
             except Exception as e:
                 logging.error(f"{model_name} trial failed: {e}")
-                return -0 # penalize instead of crashing
+                return -1.0 # penalize instead of crashing
                 # raise UsVisaException(e, sys)
             
         study = optuna.create_study(
@@ -181,10 +183,21 @@ class ModelTrainer:
                 x_train, y_train = train_arr[:, :-1], train_arr[:, -1]
                 x_test, y_test = test_arr[:, :-1], test_arr[:, -1]
 
+                # force type
+                x_train = x_train.astype(np.float32)
+                x_test = x_test.astype(np.float32)
+                y_train = y_train.astype(int)
+                y_test = y_test.astype(int)
+
+    
                 best_global_model = None
                 best_global_score = -float("inf")
                 best_global_params = None
                 best_model_name = None
+
+                # strict feature validation
+                if x_train.shape[1] != x_test.shape[1]:
+                    raise ValueError(f"Feature mismatch: train={x_train.shape[1]}, test={x_test.shape[1]}")
 
                 # model loop
                 for model_name, model_cfg in self.schema["models"].items():
@@ -223,19 +236,24 @@ class ModelTrainer:
 
                 # final evaluation on test set
                 y_pred = best_global_model.predict(x_test)
+                y_pred = y_pred.astype(int)
 
                 metrics = {
                     "accuracy": accuracy_score(y_test, y_pred),
                     "f1": f1_score(y_test, y_pred),
-                    "precision": precision_score(y_test, y_pred),
-                    "recall": recall_score(y_test, y_pred)
+                    "precision": precision_score(y_test, y_pred, zero_division=0),
+                    "recall": recall_score(y_test, y_pred, zero_division=0)
                 }
 
                 # save model
-                save_object(
-                    self.config.trained_model_file_path,
-                    best_global_model
+                preprocessor = load_object(self.data_transformation_artifact.transformed_object_file_path)
+
+                final_model = USVisaModel(
+                    preprocessing_object=preprocessor,
+                    trained_model_object=best_global_model
                 )
+                save_object(
+                    self.config.trained_model_file_path, final_model)
 
                 # mlflow logging
                 mlflow.log_params({

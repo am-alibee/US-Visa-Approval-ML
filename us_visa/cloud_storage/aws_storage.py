@@ -24,7 +24,7 @@ class SimpleStorageService:
 
             print(f"S3 file_exists() failed: {error_code}")
 
-            if error_code = "404":
+            if error_code in ["404", "NoSuchKey", "NotFound"]:
                 return False
             
             # everything else is real error

@@ -74,10 +74,9 @@ class USvisaClassifier:
             logging.info("Starting prediction using S3")
 
             # run prediction
-            if not self.estimator.is_model_present():
-                raise ValueError("No model found in S3. Train and deploy first")
+            model = self.estimator.load_model()
 
-            prediction = self.estimator.predict(dataframe)
+            prediction = model.predict(dataframe)
 
             logging.info("Prediction completed successfully")
 

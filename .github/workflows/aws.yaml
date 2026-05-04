@@ -49,6 +49,8 @@ jobs:
         run: |
           IMAGE="${{ needs.Continuous-Integration.outputs.image }}"
 
+          echo "Using image: $IMAGE"
+
           docker run -d \
             --name usvisa \
             --restart unless-stopped \

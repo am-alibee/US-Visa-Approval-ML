@@ -43,8 +43,12 @@ jobs:
       AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
 
     steps:
-      - name: Stop existing container
-        run: docker rm -f usvisa || true
+      - name: Stop anything using port 8080
+        run: |
+          echo "Cleaning up port 8080..."
+          docker ps -q --filter "publish=8080" | xargs -r docker stop
+          docker ps -aq --filter "publish=8080" | xargs -r docker rm
+          docker rm -f usvisa || true
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

@@ -33,6 +33,19 @@ jobs:
           echo "SEARCH BAD LINES:"
           grep -nE "\.|-e|file:|/app" requirements.txt || true
 
+      - name: HARD DEBUG requirements.txt
+        run: |
+          echo "===== LINE NUMBERS ====="
+          nl -ba requirements.txt
+
+          echo "===== FULL RAW FILE ====="
+          cat -A requirements.txt
+
+          echo "===== SEARCH DOT INSTALLS ====="
+          grep -n "^\.$" requirements.txt || true
+          grep -n "file://" requirements.txt || true
+          grep -n "-e" requirements.txt || true
+
       - name: FULL requirements debug
         run: |
           echo "===== LINE NUMBERS ====="

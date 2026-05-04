@@ -13,6 +13,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Show requirements with hidden characters
+        run: |
+          cat -A requirements.txt
+          sed -n '25,45p' requirements.txt
+
+      - name: Find exact bad line
+        run: |
+          nl -ba requirements.txt | sed -n '25,45p'
+
       - name: FULL requirements debug
         run: |
           echo "===== LINE NUMBERS ====="

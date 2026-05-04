@@ -1,11 +1,9 @@
-FROM python:3.10-slim
+FROM python:3.8.5-slim-buster
 
 WORKDIR /app
 
-COPY . .
+COPY . /app
 
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
-
-CMD ["python3","app.py"]
+CMD ["python3", "app.py"]

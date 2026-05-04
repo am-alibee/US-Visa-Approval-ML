@@ -2,6 +2,7 @@ import os
 import sys
 import pickle
 from typing import Optional
+import tempfile
 
 from botocore.exceptions import ClientError
 
@@ -18,8 +19,16 @@ class SimpleStorageService:
         try:
             self.s3_client.head_object(Bucket=bucket, Key=key)
             return True
-        except ClientError:
-            return False
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
+
+            print(f"S3 file_exists() failed: {error_code}")
+
+            if error_code = "404":
+                return False
+            
+            # everything else is real error
+            raise UsVisaException(e, sys)
         
     def upload_file(self, local_path: str, bucket: str, key: str):
         try:
@@ -30,7 +39,7 @@ class SimpleStorageService:
     
     def download_file(self, bucket: str, key: str, local_path: str):
         try:
-            logging.info(f"Downloading s3://{bucket}{key} -> {local_path}")
+            logging.info(f"Downloading s3://{bucket}/{key} -> {local_path}")
             self.s3_client.download_file(bucket, key, local_path)
         except Exception as e:
             raise UsVisaException(e, sys)
@@ -48,6 +57,9 @@ class SimpleStorageService:
         
     def load_model(self, bucket: str, key: str, tmp_path: str = "temp_model.pkl"):
         try:
+            if tmp_path is None:
+                tmp_path = os.path.join(tempfile.gettempdir(), "model.pkl")
+
             self.download_file(bucket, key, tmp_path)
 
             with open(tmp_path, "rb") as f:

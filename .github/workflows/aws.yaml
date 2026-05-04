@@ -22,6 +22,17 @@ jobs:
         run: |
           nl -ba requirements.txt | sed -n '25,45p'
 
+      - name: Dump exact requirements with line numbers
+        run: |
+          echo "TOTAL LINES:"
+          wc -l requirements.txt
+
+          echo "FULL FILE WITH NUMBERS:"
+          nl -ba requirements.txt
+
+          echo "SEARCH BAD LINES:"
+          grep -nE "\.|-e|file:|/app" requirements.txt || true
+
       - name: FULL requirements debug
         run: |
           echo "===== LINE NUMBERS ====="

@@ -13,6 +13,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: FULL requirements debug
+        run: |
+          echo "===== LINE NUMBERS ====="
+          nl -ba requirements.txt
+
+          echo "===== RAW FILE ====="
+          cat requirements.txt
+
+          echo "===== SEARCH FOR BAD PATTERNS ====="
+          grep -n "file://" requirements.txt || true
+          grep -n "-e" requirements.txt || true
+          grep -n "^\.$" requirements.txt || true
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:

@@ -24,16 +24,15 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push Docker image to ECR
-        id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPO }}
           IMAGE_TAG: latest
         run: |
           IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "Building image: $IMAGE"
           docker build -t $IMAGE .
           docker push $IMAGE
-          echo "image=$IMAGE" >> $GITHUB_OUTPUT
 
 
   Continuous-Deployment:
@@ -41,15 +40,18 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Stop and remove old container
+      - name: Stop existing container (safe cleanup)
         run: |
           docker rm -f usvisa || true
 
-      - name: Run new Docker container
+      - name: Deploy latest Docker image
         run: |
-          IMAGE="${{ needs.Continuous-Integration.outputs.image }}"
+          IMAGE="${{ needs.Continuous-Integration.outputs.registry }}/${{ secrets.ECR_REPO }}:latest"
 
-          echo "Using image: $IMAGE"
+          # fallback (more reliable than outputs)
+          IMAGE="${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest"
+
+          echo "Deploying image: $IMAGE"
 
           docker run -d \
             --name usvisa \
